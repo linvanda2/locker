@@ -65,7 +65,6 @@ class Locker
     /**
      * 解锁
      * 只能解自己加的锁
-     * 注意此处由于分成 get 和 del 两步操作，原则上并非原子性，但实际中这种差可以接受的
      */
     public function unlock()
     {
