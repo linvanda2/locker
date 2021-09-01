@@ -73,11 +73,20 @@ class Locker
             return;
         }
 
-        if ($this->redis->get($this->key) === $this->privateKey) {
-            $this->redis->del($this->key);
-        }
+        // 使用lua脚本保证 get 和 del 操作的原子性
+        $lua = <<<SCR
+        if (redis.call('get', KEYS[1]) == ARGV[1])
+        then
+            redis.call('del', KEYS[1]);
+        end
+        return 1;
+        SCR;
 
-        $this->status = self::STATUS_UNLOCK;
+        if ($this->redis->eval($lua, [$this->key, $this->privateKey], 1) == 1) {
+            $this->status = self::STATUS_UNLOCK;
+        } else {
+            // 解锁失败，目前先不额外处理，让其自动过期
+        }
     }
 
     private function privateKey()
